@@ -47,6 +47,8 @@ export default class AppCircle extends Vue {
         .range([0, this.height - padding.top - padding.bottom])
         .padding(0.1);
 
+      const color = d3.scaleOrdinal(d3.schemeCategory10);
+
       bars
         .enter()
         .append('rect')
@@ -55,7 +57,7 @@ export default class AppCircle extends Vue {
         .attr('y', (d, i) => yScale(d.name) as number + padding.top)
         .attr('width', d => xScale(d.score))
         .attr('height', yScale.bandwidth())
-        .attr('fill', (d, i) => `hsla(${i*30}, 60%, 60%, 0.9)`)
+        .attr('fill', (d, i) => color(String(i)))
 
       d3
         .select(elm)

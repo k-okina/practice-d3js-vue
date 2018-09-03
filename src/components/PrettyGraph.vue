@@ -55,9 +55,13 @@ export default class AppCircle extends Vue {
         .merge(bars)
         .attr('x', padding.left)
         .attr('y', (d, i) => yScale(d.name) as number + padding.top)
-        .attr('width', d => xScale(d.score))
+        .attr('width', 0)
         .attr('height', yScale.bandwidth())
         .attr('fill', (d, i) => color(String(i)))
+        .transition()
+        .duration(450)
+        .delay(100)
+        .attr('width', d => xScale(d.score))
 
       d3
         .select(elm)

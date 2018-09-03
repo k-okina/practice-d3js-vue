@@ -17,8 +17,6 @@ export default class AppCircle extends Vue {
   @Prop({default: 240}) height!: number;
 
   mounted() {
-
-
     const data = [
       {name: 'taguchi', score: 717},
       {name: 'fkoji', score: 920},
@@ -35,6 +33,7 @@ export default class AppCircle extends Vue {
       };
 
       const elm = this.$refs.targetSvg as Element;
+      d3.select(elm).selectAll('rect').remove()
       const bars = d3.select(elm).selectAll('rect').data(dataSet);
       const xScale = d3
         .scaleLinear()
@@ -56,7 +55,7 @@ export default class AppCircle extends Vue {
         .attr('y', (d, i) => yScale(d.name) as number + padding.top)
         .attr('width', d => xScale(d.score))
         .attr('height', yScale.bandwidth())
-        .attr('fill', 'yellow')
+        .attr('fill', (d, i) => `hsla(${i*30}, 60%, 60%, 0.9)`)
 
       d3
         .select(elm)

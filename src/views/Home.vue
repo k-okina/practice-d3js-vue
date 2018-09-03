@@ -1,16 +1,19 @@
 <template>
   <div class="home">
-    <PrettyGraph msg="Welcome to Your Vue.js + TypeScript App"/>
+    <!-- <PrettyGraph msg="Welcome to Your Vue.js + TypeScript App"/> -->
+    <AppCircle/>
   </div>
 </template>
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import PrettyGraph from '@/components/PrettyGraph.vue'; // @ is an alias to /src
+import AppCircle from '@/components/AppCircle.vue'; // @ is an alias to /src
+// import PrettyGraph from '@/components/PrettyGraph.vue'; // @ is an alias to /src
 
 @Component({
   components: {
-    PrettyGraph,
+    // PrettyGraph,
+    AppCircle,
   },
 })
 export default class Home extends Vue {}

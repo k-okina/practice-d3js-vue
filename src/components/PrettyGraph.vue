@@ -5,6 +5,7 @@
 </template>
 
 <script lang="ts">
+import * as d3 from 'd3';
 import { Component, Prop, Vue } from 'vue-property-decorator';
 
 @Component

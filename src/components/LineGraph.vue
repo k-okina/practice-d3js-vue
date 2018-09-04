@@ -34,7 +34,7 @@ export default class LineGraph extends Vue {
   @Prop({default: 240}) height!: number;
 
   mounted() {
-    const graph: GraphData[] = [14, 18, 37, 25, 38, 41].map((d, i) => {
+    const graph: GraphData[] = [0.14, 0.18, 0.37, 0.25, 0.38, 0.41].map((d, i) => {
       const date = new Date();
       date.setDate(i + 1);
       return { date, y: d };
@@ -90,14 +90,10 @@ export default class LineGraph extends Vue {
       .attr('transform', `translate(0, ${height})`)
       .call(d3.axisBottom(xScale) as any); // Create an axis component with d3.axisBottom
 
-    const datanum = d3.range(dataset.graph.length).map(() => ({'y': d3.randomUniform(1)() }));
-
-    console.log(datanum, dataset.graph);
-
     // 9. Append the path, bind the data, and call the line generator
     svg
       .append('path')
-      .datum(datanum) // 10. Binds data to the line
+      .datum(dataset.graph) // 10. Binds data to the line
       .attr('class', 'line') // Assign a class for styling
       .attr('d', line as any); // 11. Calls the line generator
   };

@@ -1,5 +1,5 @@
 <template>
-  <svg ref="targetSvg" :width="width" :height="height" style="background: gray"></svg>
+  <svg ref="targetSvg" :width="width" :height="height" style="background: lightgoldenrodyellow"></svg>
 </template>
 
 <script lang="ts">
@@ -9,7 +9,7 @@ import { setTimeout } from 'timers';
 
 type GraphData = {
   date: Date;
-  point: number;
+  y: number;
 }
 
 type Range = {
@@ -34,39 +34,36 @@ export default class LineGraph extends Vue {
   @Prop({default: 240}) height!: number;
 
   mounted() {
-    // const graph: GraphData[] = [14, 18, 37, 25, 38, 41].map((d, i) => {
-    //   const date = new Date();
-    //   date.setDate(i + 1);
-    //   return { date, point: d };
-    // });
+    const graph: GraphData[] = [14, 18, 37, 25, 38, 41].map((d, i) => {
+      const date = new Date();
+      date.setDate(i + 1);
+      return { date, y: d };
+    });
 
-    // const ranges: Range[] = [{
-    //   dates: [graph[1].date, graph[3].date],
-    //   description: 'ここにいる人は10人中1人は転職してます。',
-    // }];
+    const ranges: Range[] = [{
+      dates: [graph[1].date, graph[3].date],
+      description: 'ここにいる人は10人中1人は転職してます。',
+    }];
 
-    // const points: Point[] = [{
-    //   date: graph[2].date,
-    //   description: 'ここにいる人は2人に1人は転職してます。',
-    // }];
+    const points: Point[] = [{
+      date: graph[2].date,
+      description: 'ここにいる人は2人に1人は転職してます。',
+    }];
 
-    // const dataset: DataStructure = {
-    //   graph,
-    //   ranges,
-    //   points,
-    // };
+    const dataset: DataStructure = {
+      graph,
+      ranges,
+      points,
+    };
 
     // 2. Use the margin convention practice
-    const margin = {top: 50, right: 0, bottom: 50, left: 0}
-      , width = window.innerWidth - margin.left - margin.right // Use the window's width
-      , height = window.innerHeight - margin.top - margin.bottom; // Use the window's height
-
-    // The number of datapoints
-    const n = 21;
+    const margin = {top: 50, right: 10, bottom: 50, left: 10};
+    const width = this.width - margin.left - margin.right;
+    const height = this.height - margin.top - margin.bottom;
 
     // 5. X scale will use the index of our data
     const xScale = d3.scaleLinear()
-        .domain([0, n-1]) // input
+        .domain([0, dataset.graph.length - 1]) // input
         .range([0, width]); // output
 
     // 6. Y scale will use the randomly generate number
@@ -80,27 +77,29 @@ export default class LineGraph extends Vue {
         .y((d: any) => yScale(d.y)) // set the y values for the line generator
         .curve(d3.curveMonotoneX) // apply smoothing to the line
 
-    // 8. An array of objects of length N. Each object has key -> value pair, the key being "y" and the value is a random number
-    const dataset = d3.range(n).map(() => ({'y': d3.randomUniform(1)() }))
-
     // 1. Add the SVG to the page and employ #2
-    const svg = d3.select('body').append('svg')
-        .attr('width', width + margin.left + margin.right)
-        .attr('height', height + margin.top + margin.bottom)
+    const svg = d3
+      .select(this.$refs.targetSvg as Element)
       .append('g')
-        .attr('transform', `translate(${margin.left}, ${margin.top})`);
+      .attr('transform', `translate(${margin.left}, ${margin.top})`);
 
     // 3. Call the x axis in a group tag
-    svg.append('g')
-        .attr('class', 'x axis')
-        .attr('transform', `translate(0, ${height})`)
-        .call(d3.axisBottom(xScale) as any); // Create an axis component with d3.axisBottom
+    svg
+      .append('g')
+      .attr('class', 'x axis')
+      .attr('transform', `translate(0, ${height})`)
+      .call(d3.axisBottom(xScale) as any); // Create an axis component with d3.axisBottom
+
+    const datanum = d3.range(dataset.graph.length).map(() => ({'y': d3.randomUniform(1)() }));
+
+    console.log(datanum, dataset.graph);
 
     // 9. Append the path, bind the data, and call the line generator
-    svg.append('path')
-        .datum(dataset) // 10. Binds data to the line
-        .attr('class', 'line') // Assign a class for styling
-        .attr('d', line as any); // 11. Calls the line generator
+    svg
+      .append('path')
+      .datum(datanum) // 10. Binds data to the line
+      .attr('class', 'line') // Assign a class for styling
+      .attr('d', line as any); // 11. Calls the line generator
   };
 }
 </script>

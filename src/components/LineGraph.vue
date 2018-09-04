@@ -13,17 +13,16 @@ function format(date: Date): string {
 }
 
 type GraphData = {
-  date: Date;
   y: number;
 }
 
 type Range = {
-  dates: Date[];
+  index: number[];
   description: string;
 }
 
 type DataStructure = {
-  graph: GraphData[];
+  steps: GraphData[];
   ranges: Range[];
 };
 
@@ -32,31 +31,33 @@ export default class LineGraph extends Vue {
   @Prop({default: 600}) width!: number;
   @Prop({default: 240}) height!: number;
 
-  mounted() {
-    const graph: GraphData[] = [0.14, 0.18, 0.37, 0.25, 0.38, 0.41].map((d, i) => {
-      const date = new Date();
-      date.setDate(i + 1);
-      return { date, y: d };
-    });
+  public mounted() {
+    const steps: GraphData[] = [...Array(120)].map(() => ({y: Math.random()}));
 
     const ranges: Range[] = [{
-      dates: [graph[0].date, graph[1].date],
+      index: [0, 1],
       description: 'ここにいる人は10人中1人は転職してます。',
     }];
 
     const dataset: DataStructure = {
-      graph,
+      steps,
       ranges,
     };
 
+    this.renderGraph(dataset, new Date(2017));
+  }
+
+  private renderGraph(dataset: DataStructure, startDate: Date) {
     // 2. Use the margin convention practice
     const margin = {top: 50, right: 10, bottom: 50, left: 10};
     const width = this.width - margin.left - margin.right;
     const height = this.height - margin.top - margin.bottom;
 
+    const xMax = d3.max(dataset.steps, d => d.y );
+
     // 5. X scale will use the index of our data
     const xScale = d3.scaleLinear()
-        .domain([0, dataset.graph.length - 1]) // input
+        .domain([0, dataset.steps.length - 1]) // input
         .range([0, width]); // output
 
     // 6. Y scale will use the randomly generate number
@@ -78,8 +79,8 @@ export default class LineGraph extends Vue {
 
     const xAxis = d3
       .axisBottom(xScale)
-      .tickFormat((d) => {
-        console.log(d);
+      .tickFormat((d, i) => {
+        console.log(d, i);
         return `${d} 年`;
       });
 
@@ -93,7 +94,7 @@ export default class LineGraph extends Vue {
     // 9. Append the path, bind the data, and call the line generator
     svg
       .append('path')
-      .datum(dataset.graph) // 10. Binds data to the line
+      .datum(dataset.steps) // 10. Binds data to the line
       .attr('class', 'line') // Assign a class for styling
       .attr('d', line as any); // 11. Calls the line generator
   };

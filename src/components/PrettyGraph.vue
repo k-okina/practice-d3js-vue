@@ -13,7 +13,7 @@ type Data = {
 }
 
 @Component
-export default class AppCircle extends Vue {
+export default class PrettyGraph extends Vue {
   @Prop({default: 600}) width!: number;
   @Prop({default: 240}) height!: number;
 

@@ -6,6 +6,7 @@
 import * as d3 from 'd3';
 import { Component, Prop, Vue } from 'vue-property-decorator';
 import { setTimeout } from 'timers';
+import { copyFile } from 'fs';
 
 function format(date: Date): string {
   const format = 'YYYY年MM月'.replace(/YYYY/, String(date.getFullYear()));
@@ -13,6 +14,7 @@ function format(date: Date): string {
 }
 
 type GraphData = {
+  x: number;
   y: number;
 }
 
@@ -32,7 +34,10 @@ export default class LineGraph extends Vue {
   @Prop({default: 240}) height!: number;
 
   public mounted() {
-    const steps: GraphData[] = [...Array(120)].map(() => ({y: Math.random()}));
+    const steps: GraphData[] = d3.range(120).map((d, i) => ({
+      x: i * 10,
+      y: Math.random(),
+    }));
 
     const ranges: Range[] = [{
       index: [0, 1],
@@ -44,59 +49,71 @@ export default class LineGraph extends Vue {
       ranges,
     };
 
-    this.renderGraph(dataset, new Date(2017));
+    this.renderGraph(this.$refs.targetSvg as Element, dataset, new Date(2017));
   }
 
-  private renderGraph(dataset: DataStructure, startDate: Date) {
+  private renderGraph(elm: Element, dataset: DataStructure, startDate: Date) {
     // 2. Use the margin convention practice
-    const margin = {top: 50, right: 10, bottom: 50, left: 10};
-    const width = this.width - margin.left - margin.right;
+    const margin = {top: 0, right: 10, bottom: 50, left: 10};
+    const period = 2; // 期間は12年
+    const width = this.width;
+    const scrollWidth = width * period - margin.left - margin.right;
     const height = this.height - margin.top - margin.bottom;
-
-    const xMax = d3.max(dataset.steps, d => d.y );
-
-    // 5. X scale will use the index of our data
     const xScale = d3.scaleLinear()
-        .domain([0, dataset.steps.length - 1]) // input
-        .range([0, width]); // output
+      .domain([0, dataset.steps.length])
+      .range([0, scrollWidth + width]);
+    const yScale = d3.scaleLinear().domain([0, 1]).range([height, 0]);
+    const svg = d3.select(elm);
 
-    // 6. Y scale will use the randomly generate number
-    const yScale = d3.scaleLinear()
-        .domain([0, 1]) // input
-        .range([height, 0]); // output
+    svg.attr('cursor', 'move');
 
-    // 7. d3's line generator
+    // 描画領域を作成
+    const stage = svg.append('g').attr('transform', `translate(${margin.left}, ${margin.top})`);
+
+    // 曲線グラフを作成
     const line = d3.line()
-        .x((d, i) => xScale(i)) // set the x values for the line generator
-        .y((d: any) => yScale(d.y)) // set the y values for the line generator
-        .curve(d3.curveMonotoneX) // apply smoothing to the line
+      .x((d, i) => xScale(i))
+      .y((d: any) => yScale(d.y))
+      .curve(d3.curveMonotoneX);
+    stage.append('path').datum(dataset.steps).attr('class', 'line').attr('d', line as any);
 
-    // 1. Add the SVG to the page and employ #2
-    const svg = d3
-      .select(this.$refs.targetSvg as Element)
-      .append('g')
-      .attr('transform', `translate(${margin.left}, ${margin.top})`);
-
-    const xAxis = d3
-      .axisBottom(xScale)
+    // 補助目盛線を作成
+    const xAxis = d3.axisBottom(xScale)
       .tickFormat((d, i) => {
         console.log(d, i);
         return `${d} 年`;
       });
 
-    // 3. Call the x axis in a group tag
-    svg
+    stage
       .append('g')
       .attr('class', 'x axis')
       .attr('transform', `translate(0, ${height})`)
-      .call(xAxis as any); // Create an axis component with d3.axisBottom
+      .call(xAxis as any);
 
-    // 9. Append the path, bind the data, and call the line generator
-    svg
-      .append('path')
-      .datum(dataset.steps) // 10. Binds data to the line
-      .attr('class', 'line') // Assign a class for styling
-      .attr('d', line as any); // 11. Calls the line generator
+    // ズームイベントリスナーの設定
+    const zoom = d3.zoom()
+      .on('zoom', () => {
+          const t = d3.event.transform; //マウスの移動量を取得
+          console.log(t.x);
+          let tx = null;
+
+          //移動範囲を制限
+          if (t.x <= -scrollWidth - margin.left - margin.right) { //右端の最大移動量を設定
+            tx = -scrollWidth;
+            t.x = -scrollWidth;
+          } else if (t.x >= 0) { //左端の最大移動量を設定
+            tx = margin.left;
+            t.x = margin.left;
+          } else {
+            tx = t.x;
+          }
+
+          //マウスに移動量に合わせてステージを移動
+          stage.attr('transform', `translate(${tx}, 0)`);
+      });
+
+    //ズームイベントリスナーをsvgに設置
+    svg.call(zoom);
   };
 }
 </script>
@@ -106,20 +123,5 @@ export default class LineGraph extends Vue {
     fill: none;
     stroke: #ffab00;
     stroke-width: 3;
-}
-
-.overlay {
-  fill: none;
-  pointer-events: all;
-}
-
-.dot {
-    fill: #ffab00;
-    stroke: #fff;
-}
-
-.focus circle {
-  fill: none;
-  stroke: steelblue;
 }
 </style>

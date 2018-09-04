@@ -18,14 +18,12 @@ type GraphData = {
   y: number;
 }
 
-type Range = {
-  index: number[];
-  description: string;
-}
+type Hazard = boolean;
 
 type DataStructure = {
   steps: GraphData[];
-  ranges: Range[];
+  hazard: Hazard[];
+  hazardDescriptionn: string;
 };
 
 const generateDatesBySteps = (steps: GraphData[], date: Date): string[] => {
@@ -43,14 +41,12 @@ export default class LineGraph extends Vue {
       y: Math.random(),
     }));
 
-    const ranges: Range[] = [{
-      index: [0, 1],
-      description: 'ここにいる人は10人中1人は転職してます。',
-    }];
+    const hazard: Hazard[] = steps.map((d) => d.y > 0.2);
 
     const dataset: DataStructure = {
       steps,
-      ranges,
+      hazard,
+      hazardDescriptionn: '転職しそうな時期です',
     };
 
     this.renderGraph(this.$refs.targetSvg as Element, dataset, new Date(2017, 1, 1));
@@ -61,11 +57,11 @@ export default class LineGraph extends Vue {
     const margin = {top: 0, right: 10, bottom: 50, left: 10};
     const period = 12; // 期間は12年
     const width = this.width;
-    const scrollWidth = width * period - margin.left - margin.right;
+    const scrollWidth = width * period;
     const height = this.height - margin.top - margin.bottom;
     const xScale = d3.scaleLinear()
       .domain([0, dataset.steps.length])
-      .range([0, scrollWidth + width]);
+      .range([0, scrollWidth]);
     const yScale = d3.scaleLinear().domain([0, 1]).range([height, 0]);
     const svg = d3.select(elm);
 
@@ -82,7 +78,7 @@ export default class LineGraph extends Vue {
     const dates = generateDatesBySteps(dataset.steps, startDate);
     const bottomXScale = d3.scaleBand()
       .domain(dates)
-      .range([0, scrollWidth + width]);
+      .range([0, scrollWidth]);
     const xAxis = d3.axisBottom(bottomXScale);
 
     stage
@@ -93,25 +89,24 @@ export default class LineGraph extends Vue {
 
     // スクロールの設定
     svg.attr('cursor', 'move');
-    const zoom = d3.zoom()
-      .on('zoom', () => {
-          const t = d3.event.transform; //マウスの移動量を取得
-          let tx = null;
+    const zoom = d3.zoom().on('zoom', () => {
+      const leftLimit = 0; // 左側の限界値
+      const rightLimit = scrollWidth - width; // 右側の限界値 幅が600でスクロールなしならこの値は0になるべき
+      const t = d3.event.transform; //マウスの移動量を取得
+      let tx = null;
 
-          //移動範囲を制限
-          if (t.x <= -scrollWidth - margin.left - margin.right) { //右端の最大移動量を設定
-            tx = -scrollWidth;
-            t.x = -scrollWidth;
-          } else if (t.x >= 0) { //左端の最大移動量を設定
-            tx = margin.left;
-            t.x = margin.left;
-          } else {
-            tx = t.x;
-          }
+      // 移動範囲を制限
+      if (t.x <= -rightLimit) { // 右端に達したなら停止
+        t.x = tx = -rightLimit - margin.right;
+      } else if (t.x >= leftLimit) { // 左端に達したなら停止
+        t.x = tx = margin.left;
+      } else { // スクロール範囲内なら移動
+        tx = t.x;
+      }
 
-          //マウスに移動量に合わせてステージを移動
-          stage.attr('transform', `translate(${tx}, 0)`);
-      });
+      // マウスに移動量に合わせてステージを移動
+      stage.attr('transform', `translate(${tx}, 0)`);
+    });
 
     //ズームイベントリスナーをsvgに設置
     svg.call(zoom);

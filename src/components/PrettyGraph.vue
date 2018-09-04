@@ -5,6 +5,7 @@
 <script lang="ts">
 import * as d3 from 'd3';
 import { Component, Prop, Vue } from 'vue-property-decorator';
+import { setTimeout } from 'timers';
 
 type Data = {
   name: string;
@@ -60,7 +61,8 @@ export default class AppCircle extends Vue {
         .attr('fill', (d, i) => color(String(i)))
         .transition()
         .duration(450)
-        .delay(100)
+        .delay((d, i) => i * 200)
+        .ease(d3.easeElastic)
         .attr('width', d => xScale(d.score))
 
       d3
@@ -83,10 +85,12 @@ export default class AppCircle extends Vue {
         .attr('transform', `translate(${padding.left}, ${padding.top})`);
     }
     draw(data);
-    draw([
-      {name: 'taguchi', score: 717},
-      {name: 'fkoji', score: 920},
-    ]);
+    setTimeout(() => {
+      draw([
+        {name: 'taguchi', score: 717},
+        {name: 'fkoji', score: 920},
+      ]);
+    }, 1000);
   };
 }
 </script>

@@ -10,22 +10,15 @@ import { setTimeout } from 'timers';
 type Data = {
   name: string;
   score: number;
-}
+};
 
 @Component
 export default class PrettyGraph extends Vue {
-  @Prop({default: 600}) width!: number;
-  @Prop({default: 240}) height!: number;
+  @Prop({default: 600}) private width!: number;
+  @Prop({default: 240}) private height!: number;
 
-  mounted() {
-    const data = [
-      {name: 'taguchi', score: 717},
-      {name: 'fkoji', score: 920},
-      {name: 'tanaka', score: 120},
-      {name: 'takkun', score: 999},
-      {name: 'dotinstall', score: 618},
-    ];
-    const draw = (dataSet: Array<Data>) => {
+  public mounted() {
+    const draw = (dataSet: Data[]) => {
       const padding = {
         top: 40,
         bottom: 40,
@@ -34,17 +27,17 @@ export default class PrettyGraph extends Vue {
       };
 
       const elm = this.$refs.targetSvg as Element;
-      d3.select(elm).selectAll('rect').remove()
+      d3.select(elm).selectAll('rect').remove();
       const bars = d3.select(elm).selectAll('rect').data(dataSet);
       const xScale = d3
         .scaleLinear()
-        .domain([0, d3.max(dataSet, d => d.score) as Number])
+        .domain([0, d3.max(dataSet, (d) => d.score) as number])
         .range([0, this.width - padding.left - padding.right])
         .nice();
 
       const yScale = d3
         .scaleBand()
-        .domain(dataSet.map(data => data.name))
+        .domain(dataSet.map((data) => data.name))
         .range([0, this.height - padding.top - padding.bottom])
         .padding(0.1);
 
@@ -63,12 +56,12 @@ export default class PrettyGraph extends Vue {
         .duration(450)
         .delay((d, i) => i * 200)
         .ease(d3.easeElastic)
-        .attr('width', d => xScale(d.score))
+        .attr('width', (d) => xScale(d.score));
 
       d3
         .select(elm)
         .selectAll('.axis')
-        .remove()
+        .remove();
 
       d3
         .select(elm)
@@ -83,14 +76,20 @@ export default class PrettyGraph extends Vue {
         .call(d3.axisLeft(yScale) as any)
         .attr('class', 'axis')
         .attr('transform', `translate(${padding.left}, ${padding.top})`);
-    }
-    draw(data);
+    };
+    draw([
+      {name: 'taguchi', score: 717},
+      {name: 'fkoji', score: 920},
+      {name: 'tanaka', score: 120},
+      {name: 'takkun', score: 999},
+      {name: 'dotinstall', score: 618},
+    ]);
     setTimeout(() => {
       draw([
         {name: 'taguchi', score: 717},
         {name: 'fkoji', score: 920},
       ]);
     }, 1000);
-  };
+  }
 }
 </script>

@@ -9,7 +9,6 @@ import { setTimeout } from 'timers';
 import { copyFile } from 'fs';
 
 type GraphData = {
-  x: number;
   y: number;
 };
 
@@ -37,7 +36,6 @@ export default class LineGraph extends Vue {
 
   public mounted() {
     const steps: GraphData[] = d3.range(120).map((d, i) => ({
-      x: i * 10,
       y: Math.random(),
     }));
 

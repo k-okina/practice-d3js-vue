@@ -1,6 +1,8 @@
 <template>
   <div class="home">
     <LineGraph/>
+    <LineGraph/>
+    <LineGraph/>
     <!-- <AppCircle/> -->
   </div>
 </template>

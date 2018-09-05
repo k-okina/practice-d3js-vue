@@ -19,13 +19,18 @@ type DataStructure = {
   startDate: Date;
 };
 
-const formatDate = (date: Date): string => {
-  const format = 'MM月YYYY年'.replace(/YYYY/, String(date.getFullYear()));
+const getYear = (date: Date): string => {
+  const format = 'YYYY年'.replace(/YYYY/, String(date.getFullYear()));
   return format.replace(/MM/, String(date.getMonth() + 1));
 };
 
-const generateDatesBySteps = (steps: Step[], date: Date): string[] => {
-  return steps.map((d, i) => formatDate(new Date(date.getFullYear(), date.getMonth() + i)));
+const getMonth = (date: Date): string => {
+  const format = 'MM月'.replace(/YYYY/, String(date.getFullYear()));
+  return format.replace(/MM/, String(date.getMonth() + 1));
+};
+
+const generateDatesBySteps = (steps: Step[], date: Date): Date[] => {
+  return steps.map((d, i) => new Date(date.getFullYear(), date.getMonth() + i));
 };
 
 @Component
@@ -57,12 +62,13 @@ export default class LineGraph extends Vue {
     const period = 12; // 期間は12年
     const screenWidth = this.width; // スクロールなしの1画面幅
     const scrollWidth = screenWidth * period;
-    const axisBottomHeight = 30; // axis bottomにはtextが書いてあり、その高さを考慮しないとtextが描画領域内に収まらない
+    const axisBottomHeight = 50; // axis bottomにはtextが書いてあり、その高さを考慮しないとtextが描画領域内に収まらない
     const height = this.height - margin.top - margin.bottom - axisBottomHeight;
 
     const svg = d3.select(elm)
       .attr('width', this.width)
-      .attr('height', this.height);
+      .attr('height', this.height)
+      .style('background', 'antiquewhite');
 
     // スクロールの設定
     svg.attr('cursor', 'move');
@@ -117,11 +123,21 @@ export default class LineGraph extends Vue {
 
     // x補助目盛線を作成
     const dates = generateDatesBySteps(dataset.steps, dataset.startDate);
+    const months = dates.map(getMonth);
+    const years = dates.map(getYear);
 
-    const xAxis = d3
+    const monthXAxis = d3
       .axisBottom(xScale)
       .ticks(dates.length)
-      .tickFormat((d, i) => dates[i])
+      .tickFormat((d, i) => months[i])
+      .tickSizeOuter(0)
+      .tickPadding(10);
+
+    const yearXAxis = d3
+      .axisBottom(xScale)
+      .ticks(dates.length)
+      .tickFormat((d, i) => years[i])
+      .tickSizeInner(0)
       .tickSizeOuter(0)
       .tickPadding(10);
 
@@ -129,7 +145,13 @@ export default class LineGraph extends Vue {
       .append('g')
       .attr('class', 'x axis')
       .attr('transform', `translate(0, ${height})`)
-      .call(xAxis as any);
+      .call(monthXAxis as any);
+
+    stage
+      .append('g')
+      .attr('class', 'x axis sub')
+      .attr('transform', `translate(0, ${height + 20})`)
+      .call(yearXAxis as any);
 
     // y補助目盛線を作成
     const yAxis = d3
@@ -183,5 +205,9 @@ export default class LineGraph extends Vue {
   path {
     display: none;
   }
+}
+
+.x.axis.sub path {
+  display: none;
 }
 </style>

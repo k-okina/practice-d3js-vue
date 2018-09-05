@@ -4,25 +4,31 @@
       <g ref="mainStage" :transform="`translate(${x}, ${y})`"></g>
     </svg>
 
-    <div
-      @mousedown="keepMoveLeft"
-      @mouseup="clearKeepDown"
-      @mouseout="clearKeepDown"
-      class="controller left"
-      :style="controllerStyle"
-    >
-      <slot name="left">left</slot>
-    </div>
+    <transition>
+      <div
+        v-if="canMoveLeft"
+        @mousedown="keepMoveLeft"
+        @mouseup="clearKeepDown"
+        @mouseout="clearKeepDown"
+        :style="controllerStyle"
+        class="controller left"
+      >
+        <slot name="left">left</slot>
+      </div>
+    </transition>
 
-    <div
-      @mousedown="keepMoveRight"
-      @mouseup="clearKeepDown"
-      @mouseout="clearKeepDown"
-      class="controller right"
-      :style="controllerStyle"
-    >
-      <slot name="right">right</slot>
-    </div>
+    <transition>
+      <div
+        v-if="canMoveRight"
+        @mousedown="keepMoveRight"
+        @mouseup="clearKeepDown"
+        @mouseout="clearKeepDown"
+        :style="controllerStyle"
+        class="controller right"
+      >
+        <slot name="right">right</slot>
+      </div>
+    </transition>
   </div>
 </template>
 
@@ -30,19 +36,6 @@
 import * as d3 from 'd3';
 import { Component, Prop, Vue } from 'vue-property-decorator';
 import { setInterval, clearInterval } from 'timers';
-
-type Step = {
-  y: number;
-};
-
-type Hazard = boolean;
-
-type DataStructure = {
-  steps: Step[];
-  hazard: Hazard[];
-  hazardDescriptionn: string;
-  startDate: Date;
-};
 
 const getYear = (date: Date): string => {
   const format = 'YYYY年'.replace(/YYYY/, String(date.getFullYear()));
@@ -57,21 +50,30 @@ const generateDatesBySteps = (steps: Step[], date: Date): Date[] => {
 };
 
 const margin = {top: 0, right: 30, bottom: 0, left: 30};
+type Margin = typeof margin;
 
 @Component
 export default class LineGraph extends Vue {
-  @Prop({default: 600}) public width!: number; // スクロールなしの1画面幅
-  @Prop({default: 240}) public height!: number;
-  @Prop({default: '#229439'}) public lineColor!: string;
-  @Prop({default: '#2ab345'}) public filterColor!: string;
-  private x = margin.left;
-  private y = margin.top;
-  private vx = 5;
+  @Prop({default: 600}) private width!: number; // スクロールなしの1画面幅
+  @Prop({default: 240}) private height!: number;
+  @Prop({default: '#229439'}) private lineColor!: string;
+  @Prop({default: '#2ab345'}) private filterColor!: string;
+  @Prop() private dataset!: DataStructure;
+  @Prop({default: () => margin}) private margin!: Margin;
+  @Prop({default: 5}) private vx!: number;
+  @Prop({default: 12}) private period!: number; // 期間は12年
+  @Prop({default: 5}) private yAxisNumber!: number;
+  @Prop() private defaultX?: number;
+  @Prop() private defaultY?: number;
+
+  private x = this.defaultX || this.margin.left;
+  private y = this.defaultY || this.margin.top;
   private keepDown: NodeJS.Timer|null = null;
-  private margin = margin;
-  private period = 12; // 期間は12年
   private axisBottomHeight = 40; // axis bottomにはtextが書いてあり、その高さを考慮しないとtextが描画領域内に収まらない
-  private yAxisNumber = 5;
+
+  public mounted() {
+    this.renderGraph();
+  }
 
   get lineGraphHeight() {
     return (this.height - this.axisBottomHeight) / 2;
@@ -91,51 +93,42 @@ export default class LineGraph extends Vue {
     return this.margin.left;
   }
 
-  public mounted() {
-    const steps: Step[] = d3.range(120).map((d, i) => ({
-      y: Math.random(),
-    }));
-
-    const hazard: Hazard[] = steps.map((d) => d.y > 0.3);
-
-    const dataset: DataStructure = {
-      steps,
-      hazard,
-      hazardDescriptionn: '転職しそうな時期です',
-      startDate: new Date(2017, 1, 1),
-    };
-
-    this.renderGraph(this.$refs.targetSvg as Element, dataset);
-  }
-
   get controllerStyle() {
     return { top: `${this.lineGraphHeight}px`};
   }
 
+  get canMoveRight() {
+    return this.x - this.vx > -this.rightLimit;
+  }
+
+  get canMoveLeft() {
+    return this.x < this.leftLimit;
+  }
+
   private keepMoveRight() {
     this.keepDown = setInterval(() => {
-      if (this.x - this.vx <= -this.rightLimit) {
+      if (this.canMoveRight) {
+        // スクロール範囲内なら移動
+        this.x -= this.vx;
+      } else {
         // 移動範囲を制限
         // 右端に達したなら停止
         this.x = -this.rightLimit;
         this.clearKeepDown();
-      } else {
-        // スクロール範囲内なら移動
-        this.x -= this.vx;
       }
     }, 1);
   }
 
   private keepMoveLeft() {
     this.keepDown = setInterval(() => {
-      if (this.x >= this.leftLimit) {
+      if (this.canMoveLeft) {
+        // スクロール範囲内なら移動
+        this.x += this.vx;
+      } else {
         // 移動範囲を制限
         // 左端に達したなら停止
         this.x = this.margin.left;
         this.clearKeepDown();
-      } else {
-        // スクロール範囲内なら移動
-        this.x += this.vx;
       }
     }, 1);
   }
@@ -144,18 +137,18 @@ export default class LineGraph extends Vue {
     clearInterval(this.keepDown as NodeJS.Timer);
   }
 
-  private renderGraph(elm: Element, dataset: DataStructure) {
+  private renderGraph() {
     const scrollWidth = this.width * this.period;
     const height = this.height - this.margin.top - this.margin.bottom - this.axisBottomHeight;
 
-    const svg = d3.select(elm)
+    const svg = d3.select(this.$refs.targetSvg as Element)
       .attr('width', this.width)
       .attr('height', this.height);
 
     // xscaleはlength - 1。0からカウント
     const xScale = d3
       .scaleLinear()
-      .domain([0, dataset.steps.length - 1])
+      .domain([0, this.dataset.steps.length - 1])
       .range([0, scrollWidth - this.margin.left - this.margin.right]);
     const yScale = d3
       .scaleLinear()
@@ -172,13 +165,13 @@ export default class LineGraph extends Vue {
       .curve(d3.curveMonotoneX);
 
     stage.append('path')
-      .datum(dataset.steps)
+      .datum(this.dataset.steps)
       .attr('class', 'line')
       .attr('stroke', this.lineColor)
       .attr('d', line as any);
 
     // x補助目盛線を作成
-    const dates = generateDatesBySteps(dataset.steps, dataset.startDate);
+    const dates = generateDatesBySteps(this.dataset.steps, this.dataset.startDate);
     const months = dates.map(getMonth);
     const years = dates.map(getYear);
 
@@ -222,13 +215,13 @@ export default class LineGraph extends Vue {
 
     // ハザード領域を表示
     const color = d3.scaleOrdinal(d3.schemeCategory10);
-    const hazardData = dataset.hazard.map((data) => data ? 'true' : '');
+    const hazardData = this.dataset.hazard.map((data) => data ? 'true' : '');
     const hazardXScale = d3
       .scaleBand()
       .domain(hazardData)
       .range([0, scrollWidth - this.margin.left - this.margin.right]);
     const hazardStage = stage.append('g').selectAll('rect').remove().data(hazardData);
-    const rectWidth = scrollWidth / dataset.hazard.length;
+    const rectWidth = scrollWidth / this.dataset.hazard.length;
     const rectHalfWidth = rectWidth / 2;
     hazardStage
       .enter()
@@ -248,6 +241,10 @@ export default class LineGraph extends Vue {
 .line {
   fill: none;
   stroke-width: 5px;
+}
+
+.axis {
+  user-select: none;
 }
 
 .axis path,
@@ -296,5 +293,17 @@ export default class LineGraph extends Vue {
   > .tick {
     opacity: 0.3;
   }
+}
+
+.v-enter-active, .v-leave-active {
+  transition: opacity .3s;
+}
+.v-enter, .v-leave-to {
+  opacity: 0;
+}
+
+.controller {
+  cursor: pointer;
+  user-select: none;
 }
 </style>

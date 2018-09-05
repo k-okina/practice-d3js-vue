@@ -1,5 +1,7 @@
 <template>
-  <svg ref="targetSvg"></svg>
+  <svg ref="targetSvg">
+    <g></g>
+  </svg>
 </template>
 
 <script lang="ts">
@@ -35,8 +37,8 @@ const generateDatesBySteps = (steps: Step[], date: Date): Date[] => {
 export default class LineGraph extends Vue {
   @Prop({default: 600}) public width!: number;
   @Prop({default: 240}) public height!: number;
-  @Prop({default: '#4d771c'}) public lineColor!: string;
-  @Prop({default: '#699c2d'}) public filterColor!: string;
+  @Prop({default: '#229439'}) public lineColor!: string;
+  @Prop({default: '#2ab345'}) public filterColor!: string;
 
   public mounted() {
     const steps: Step[] = d3.range(120).map((d, i) => ({
@@ -103,7 +105,7 @@ export default class LineGraph extends Vue {
       .range([height, 0]);
 
     // 描画領域を作成
-    const stage = svg.append('g')
+    const stage = svg.select('g')
       .attr('transform', `translate(${margin.left}, ${margin.top})`);
 
     // 曲線グラフを作成
@@ -180,7 +182,7 @@ export default class LineGraph extends Vue {
       .attr('width', rectWidth)
       .attr('height', (d) => Boolean(d) ? height : 0)
       .attr('fill', this.filterColor)
-      .style('opacity', 0.3);
+      .style('opacity', 0.2);
   }
 }
 </script>

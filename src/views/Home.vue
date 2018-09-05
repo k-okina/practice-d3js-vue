@@ -1,7 +1,10 @@
 <template>
   <div class="home">
     <LineGraph/>
-    <LineGraph/>
+    <LineGraph>
+      <button slot="left">leftボタン</button>
+      <button slot="right">rightボタン</button>
+    </LineGraph>
     <LineGraph/>
     <!-- <AppCircle/> -->
   </div>

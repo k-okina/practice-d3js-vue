@@ -3,20 +3,26 @@
     <svg ref="targetSvg">
       <g ref="mainStage" :transform="`translate(${x}, ${y})`"></g>
     </svg>
+
     <div
       @mousedown="keepMoveLeft"
       @mouseup="clearKeepDown"
       @mouseout="clearKeepDown"
       class="controller left"
       :style="controllerStyle"
-    >left</div>
+    >
+      <slot name="left">left</slot>
+    </div>
+
     <div
       @mousedown="keepMoveRight"
       @mouseup="clearKeepDown"
       @mouseout="clearKeepDown"
       class="controller right"
       :style="controllerStyle"
-    >right</div>
+    >
+      <slot name="right">right</slot>
+    </div>
   </div>
 </template>
 
@@ -44,7 +50,7 @@ const getYear = (date: Date): string => {
 };
 const getMonth = (date: Date): string => {
   const format = 'MM月'.replace(/YYYY/, String(date.getFullYear()));
-  return format.replace(/MM/, String(date.getMonth()));
+  return format.replace(/MM/, String(date.getMonth() + 1));
 };
 const generateDatesBySteps = (steps: Step[], date: Date): Date[] => {
   return steps.map((d, i) => new Date(date.getFullYear(), date.getMonth() + i));
@@ -64,7 +70,8 @@ export default class LineGraph extends Vue {
   private keepDown: NodeJS.Timer|null = null;
   private margin = margin;
   private period = 12; // 期間は12年
-  private axisBottomHeight = 50; // axis bottomにはtextが書いてあり、その高さを考慮しないとtextが描画領域内に収まらない
+  private axisBottomHeight = 40; // axis bottomにはtextが書いてあり、その高さを考慮しないとtextが描画領域内に収まらない
+  private yAxisNumber = 5;
 
   get lineGraphHeight() {
     return (this.height - this.axisBottomHeight) / 2;
@@ -180,7 +187,7 @@ export default class LineGraph extends Vue {
       .ticks(dates.length)
       .tickFormat((d, i) => months[i])
       .tickSizeOuter(0)
-      .tickPadding(10);
+      .tickPadding(5);
 
     const yearXAxis = d3
       .axisBottom(xScale)
@@ -188,7 +195,7 @@ export default class LineGraph extends Vue {
       .tickFormat((d, i) => years[i])
       .tickSizeInner(0)
       .tickSizeOuter(0)
-      .tickPadding(10);
+      .tickPadding(5);
 
     stage
       .append('g')
@@ -198,17 +205,17 @@ export default class LineGraph extends Vue {
 
     stage
       .append('g')
-      .attr('class', 'x axis sub')
+      .attr('class', 'x axis')
       .attr('transform', `translate(0, ${height + 20})`)
       .call(yearXAxis as any);
 
     // y補助目盛線を作成
     const yAxis = d3
       .axisLeft(yScale)
-      .ticks(5)
+      .ticks(this.yAxisNumber)
       .tickSizeInner(-scrollWidth);
 
-    stage
+    svg
       .append('g')
       .attr('class', 'y axis')
       .call(yAxis as any);
@@ -256,7 +263,11 @@ export default class LineGraph extends Vue {
   }
 }
 
-.x.axis.sub path {
+.x.axis path {
+  display: none;
+}
+
+.x.axis line {
   display: none;
 }
 
@@ -274,6 +285,16 @@ export default class LineGraph extends Vue {
 
   &.right {
     right: 0;
+  }
+}
+
+.y.axis {
+  > g:last-child {
+    display: none;
+  }
+
+  > .tick {
+    opacity: 0.3;
   }
 }
 </style>

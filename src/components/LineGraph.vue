@@ -5,8 +5,6 @@
 <script lang="ts">
 import * as d3 from 'd3';
 import { Component, Prop, Vue } from 'vue-property-decorator';
-import { setTimeout } from 'timers';
-import { copyFile } from 'fs';
 
 type Step = {
   y: number;
@@ -22,7 +20,7 @@ type DataStructure = {
 };
 
 const formatDate = (date: Date): string => {
-  const format = 'YYYY年MM月'.replace(/YYYY/, String(date.getFullYear()));
+  const format = 'MM月YYYY年'.replace(/YYYY/, String(date.getFullYear()));
   return format.replace(/MM/, String(date.getMonth() + 1));
 };
 
@@ -34,13 +32,15 @@ const generateDatesBySteps = (steps: Step[], date: Date): string[] => {
 export default class LineGraph extends Vue {
   @Prop({default: 600}) public width!: number;
   @Prop({default: 240}) public height!: number;
+  @Prop({default: '#4d771c'}) public lineColor!: string;
+  @Prop({default: '#699c2d'}) public filterColor!: string;
 
   public mounted() {
     const steps: Step[] = d3.range(120).map((d, i) => ({
       y: Math.random(),
     }));
 
-    const hazard: Hazard[] = steps.map((d) => d.y > 0.2);
+    const hazard: Hazard[] = steps.map((d) => d.y > 0.3);
 
     const dataset: DataStructure = {
       steps,
@@ -62,8 +62,7 @@ export default class LineGraph extends Vue {
 
     const svg = d3.select(elm)
       .attr('width', this.width)
-      .attr('height', this.height)
-      .attr('style', 'background: lightgoldenrodyellow');
+      .attr('height', this.height);
 
     // スクロールの設定
     svg.attr('cursor', 'move');
@@ -98,7 +97,7 @@ export default class LineGraph extends Vue {
     const yScale = d3
       .scaleLinear()
       .domain([0, 1])
-      .range([0, height]);
+      .range([height, 0]);
 
     // 描画領域を作成
     const stage = svg.append('g')
@@ -113,6 +112,7 @@ export default class LineGraph extends Vue {
     stage.append('path')
       .datum(dataset.steps)
       .attr('class', 'line')
+      .attr('stroke', this.lineColor)
       .attr('d', line as any);
 
     // x補助目盛線を作成
@@ -141,6 +141,27 @@ export default class LineGraph extends Vue {
       .append('g')
       .attr('class', 'y axis')
       .call(yAxis as any);
+
+    // ハザード領域を表示
+    const color = d3.scaleOrdinal(d3.schemeCategory10);
+    const hazardData = dataset.hazard.map((data) => data ? 'true' : '');
+    const hazardXScale = d3
+      .scaleBand()
+      .domain(hazardData)
+      .range([0, scrollWidth - margin.left - margin.right]);
+    const hazardStage = stage.append('g').selectAll('rect').remove().data(hazardData);
+    const rectWidth = scrollWidth / dataset.hazard.length;
+    const rectHalfWidth = rectWidth / 2;
+    hazardStage
+      .enter()
+      .append('rect')
+      .merge(hazardStage)
+      .attr('y', margin.bottom)
+      .attr('x', (d, i) => i * rectWidth - rectHalfWidth)
+      .attr('width', rectWidth)
+      .attr('height', (d) => Boolean(d) ? height : 0)
+      .attr('fill', this.filterColor)
+      .style('opacity', 0.3);
   }
 }
 </script>
@@ -148,18 +169,13 @@ export default class LineGraph extends Vue {
 <style lang="scss">
 .line {
   fill: none;
-  stroke: #ffab00;
   stroke-width: 3;
-}
-
-.tick line {
-  opacity: 0.2;
 }
 
 .axis path,
 .axis line {
   fill: none;
-  stroke: black;
+  stroke: #878a93;
 }
 
 .y.axis {

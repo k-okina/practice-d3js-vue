@@ -29,6 +29,10 @@
         <slot name="right">right</slot>
       </div>
     </transition>
+
+    <Tooltip v-show="isFocuse" :style="tooltipPosition">
+      {{ tooltipDescription }}
+    </Tooltip>
   </div>
 </template>
 
@@ -36,6 +40,7 @@
 import * as d3 from 'd3';
 import { Component, Prop, Vue } from 'vue-property-decorator';
 import { setInterval, clearInterval } from 'timers';
+import Tooltip from '@/components/Tooltip.vue';
 
 const getYear = (date: Date): string => {
   const format = 'YYYY年'.replace(/YYYY/, String(date.getFullYear()));
@@ -52,7 +57,9 @@ const generateDatesBySteps = (steps: Step[], date: Date): Date[] => {
 const margin = {top: 0, right: 30, bottom: 0, left: 30};
 type Margin = typeof margin;
 
-@Component
+@Component({
+  components: { Tooltip },
+})
 export default class LineGraph extends Vue {
   @Prop({default: 600}) private width!: number; // スクロールなしの1画面幅
   @Prop({default: 240}) private height!: number;
@@ -71,8 +78,17 @@ export default class LineGraph extends Vue {
   private keepDown: NodeJS.Timer|null = null;
   private axisBottomHeight = 40; // axis bottomにはtextが書いてあり、その高さを考慮しないとtextが描画領域内に収まらない
 
+  private isFocuse = false;
+  private tooltipX = 0;
+  private tooltipY = 0;
+  private tooltipDescription = '';
+
   public mounted() {
     this.renderGraph();
+  }
+
+  get tooltipPosition() {
+    return { left: this.tooltipX, top: this.tooltipY };
   }
 
   get lineGraphHeight() {
@@ -103,6 +119,12 @@ export default class LineGraph extends Vue {
 
   get canMoveLeft() {
     return this.x < this.leftLimit;
+  }
+
+  private setTooltipPosition(x: number, y: number, text: string) {
+    this.x = x;
+    this.y = y;
+    this.tooltipDescription = text;
   }
 
   private keepMoveRight() {

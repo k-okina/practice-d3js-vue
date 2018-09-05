@@ -1,5 +1,9 @@
 <template>
   <div class="home">
+    <Tooltip>
+      hoghoge<br>
+      fugafuga
+    </Tooltip>
     <LineGraph :dataset="dataset"/>
     <LineGraph :dataset="dataset" :defaultX="-500" :width="300" :height="200">
       <button slot="left">leftボタン</button>
@@ -15,6 +19,7 @@ import { Component, Vue } from 'vue-property-decorator';
 // import AppCircle from '@/components/AppCircle.vue'; // @ is an alias to /src
 // import PrettyGraph from '@/components/PrettyGraph.vue'; // @ is an alias to /src
 import LineGraph from '@/components/LineGraph.vue';
+import Tooltip from '@/components/Tooltip.vue';
 
 const steps: Step[] = [...Array(120)].map((d, i) => ({
   y: Math.random(),
@@ -30,6 +35,7 @@ const dataset: DataStructure = {
 @Component({
   components: {
     LineGraph,
+    Tooltip,
     // AppCircle,
   },
 })

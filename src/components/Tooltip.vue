@@ -43,6 +43,7 @@ export default Vue.extend({
   font-size: 12px;
   line-height: 1.2;
   min-width: 10px;
+  white-space: nowrap;
 }
 
 .popper__arrow {

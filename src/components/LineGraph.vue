@@ -1,20 +1,22 @@
 <template>
-  <div :style="{width: width, height: height, position: 'relative'}">
+  <div class="root-elm" :style="{width: `${width}px`, height: `${height}px`}">
     <svg ref="targetSvg">
       <g ref="mainStage" :transform="`translate(${x}, ${y})`"></g>
     </svg>
-    <div class="controller" :style="{width: `${width}px`, height: `${height - axisBottomHeight}px`}">
-      <div
-        @mousedown="keepMoveLeft"
-        @mouseup="clearKeepDown"
-        @mouseout="clearKeepDown"
-      >left</div>
-      <div
-        @mousedown="keepMoveRight"
-        @mouseup="clearKeepDown"
-        @mouseout="clearKeepDown"
-      >right</div>
-    </div>
+    <div
+      @mousedown="keepMoveLeft"
+      @mouseup="clearKeepDown"
+      @mouseout="clearKeepDown"
+      class="controller left"
+      :style="controllerStyle"
+    >left</div>
+    <div
+      @mousedown="keepMoveRight"
+      @mouseup="clearKeepDown"
+      @mouseout="clearKeepDown"
+      class="controller right"
+      :style="controllerStyle"
+    >right</div>
   </div>
 </template>
 
@@ -58,11 +60,29 @@ export default class LineGraph extends Vue {
   @Prop({default: '#2ab345'}) public filterColor!: string;
   private x = margin.left;
   private y = margin.top;
-  private vx = 1;
+  private vx = 5;
   private keepDown: NodeJS.Timer|null = null;
   private margin = margin;
   private period = 12; // 期間は12年
   private axisBottomHeight = 50; // axis bottomにはtextが書いてあり、その高さを考慮しないとtextが描画領域内に収まらない
+
+  get lineGraphHeight() {
+    return (this.height - this.axisBottomHeight) / 2;
+  }
+
+  get scrollWidth() {
+    return this.width * this.period;
+  }
+
+  // 右側の行き止まり スクロールなしならこの値は0になるべき
+  get rightLimit() {
+    return this.scrollWidth - this.width - this.margin.left;
+  }
+
+  // 右側の行き止まり
+  get leftLimit() {
+    return this.margin.left;
+  }
 
   public mounted() {
     const steps: Step[] = d3.range(120).map((d, i) => ({
@@ -81,12 +101,36 @@ export default class LineGraph extends Vue {
     this.renderGraph(this.$refs.targetSvg as Element, dataset);
   }
 
+  get controllerStyle() {
+    return { top: `${this.lineGraphHeight}px`};
+  }
+
   private keepMoveRight() {
-    this.keepDown = setInterval(() => this.x -= this.vx, 1);
+    this.keepDown = setInterval(() => {
+      if (this.x - this.vx <= -this.rightLimit) {
+        // 移動範囲を制限
+        // 右端に達したなら停止
+        this.x = -this.rightLimit;
+        this.clearKeepDown();
+      } else {
+        // スクロール範囲内なら移動
+        this.x -= this.vx;
+      }
+    }, 1);
   }
 
   private keepMoveLeft() {
-    this.keepDown = setInterval(() => this.x += this.vx, 1);
+    this.keepDown = setInterval(() => {
+      if (this.x >= this.leftLimit) {
+        // 移動範囲を制限
+        // 左端に達したなら停止
+        this.x = this.margin.left;
+        this.clearKeepDown();
+      } else {
+        // スクロール範囲内なら移動
+        this.x += this.vx;
+      }
+    }, 1);
   }
 
   private clearKeepDown() {
@@ -216,11 +260,20 @@ export default class LineGraph extends Vue {
   display: none;
 }
 
+.root-elm {
+  position: relative;
+}
+
 .controller {
   position: absolute;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  top: 0;
+  transform: translateY(-50%);
+
+  &.left {
+    left: 0;
+  }
+
+  &.right {
+    right: 0;
+  }
 }
 </style>

@@ -8,14 +8,14 @@ import { Component, Prop, Vue } from 'vue-property-decorator';
 import { setTimeout } from 'timers';
 import { copyFile } from 'fs';
 
-type GraphData = {
+type Step = {
   y: number;
 };
 
 type Hazard = boolean;
 
 type DataStructure = {
-  steps: GraphData[];
+  steps: Step[];
   hazard: Hazard[];
   hazardDescriptionn: string;
 };
@@ -25,7 +25,7 @@ const formatDate = (date: Date): string => {
   return format.replace(/MM/, String(date.getMonth() + 1));
 };
 
-const generateDatesBySteps = (steps: GraphData[], date: Date): string[] => {
+const generateDatesBySteps = (steps: Step[], date: Date): string[] => {
   return steps.map((d, i) => formatDate(new Date(date.getFullYear(), date.getMonth() + i)));
 };
 
@@ -35,7 +35,7 @@ export default class LineGraph extends Vue {
   @Prop({default: 240}) public height!: number;
 
   public mounted() {
-    const steps: GraphData[] = d3.range(120).map((d, i) => ({
+    const steps: Step[] = d3.range(120).map((d, i) => ({
       y: Math.random(),
     }));
 

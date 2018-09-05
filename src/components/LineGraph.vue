@@ -30,7 +30,7 @@
       </div>
     </transition>
 
-    <Tooltip v-show="isFocuse" :style="tooltipPosition">
+    <Tooltip v-show="isFocuse" :style="tooltipPosition" ref="tooltip">
       {{ tooltipDescription }}
     </Tooltip>
   </div>
@@ -61,34 +61,9 @@ type Margin = typeof margin;
   components: { Tooltip },
 })
 export default class LineGraph extends Vue {
-  @Prop({default: 600}) private width!: number; // スクロールなしの1画面幅
-  @Prop({default: 240}) private height!: number;
-  @Prop({default: '#229439'}) private lineColor!: string;
-  @Prop({default: '#2ab345'}) private filterColor!: string;
-  @Prop() private dataset!: DataStructure;
-  @Prop({default: () => margin}) private margin!: Margin;
-  @Prop({default: 5}) private vx!: number;
-  @Prop({default: 12}) private period!: number; // 期間は12年
-  @Prop({default: 5}) private yAxisNumber!: number;
-  @Prop() private defaultX?: number;
-  @Prop() private defaultY?: number;
-
-  private x = this.defaultX || this.margin.left;
-  private y = this.defaultY || this.margin.top;
-  private keepDown: NodeJS.Timer|null = null;
-  private axisBottomHeight = 40; // axis bottomにはtextが書いてあり、その高さを考慮しないとtextが描画領域内に収まらない
-
-  private isFocuse = false;
-  private tooltipX = 0;
-  private tooltipY = 0;
-  private tooltipDescription = '';
-
-  public mounted() {
-    this.renderGraph();
-  }
 
   get tooltipPosition() {
-    return { left: this.tooltipX, top: this.tooltipY };
+    return { left: `${this.tooltipX}px`, top: `${this.tooltipY}px` };
   }
 
   get lineGraphHeight() {
@@ -120,10 +95,39 @@ export default class LineGraph extends Vue {
   get canMoveLeft() {
     return this.x < this.leftLimit;
   }
+  @Prop({default: 600}) private width!: number; // スクロールなしの1画面幅
+  @Prop({default: 240}) private height!: number;
+  @Prop({default: '#229439'}) private lineColor!: string;
+  @Prop({default: '#2ab345'}) private filterColor!: string;
+  @Prop() private dataset!: DataStructure;
+  @Prop({default: () => margin}) private margin!: Margin;
+  @Prop({default: 5}) private vx!: number;
+  @Prop({default: 12}) private period!: number; // 期間は12年
+  @Prop({default: 5}) private yAxisNumber!: number;
+  @Prop() private defaultX?: number;
+  @Prop() private defaultY?: number;
+
+  private x = this.defaultX || this.margin.left;
+  private y = this.defaultY || this.margin.top;
+  private keepDown: NodeJS.Timer|null = null;
+  private axisBottomHeight = 40; // axis bottomにはtextが書いてあり、その高さを考慮しないとtextが描画領域内に収まらない
+
+  private isFocuse = false;
+  private tooltipX = 0;
+  private tooltipY = 0;
+  private tooltipDescription = '';
+
+  public mounted() {
+    this.renderGraph();
+  }
+
+  public destroyed() {
+    this.clearKeepDown();
+  }
 
   private setTooltipPosition(x: number, y: number, text: string) {
-    this.x = x;
-    this.y = y;
+    this.tooltipX = x;
+    this.tooltipY = y;
     this.tooltipDescription = text;
   }
 
@@ -245,6 +249,17 @@ export default class LineGraph extends Vue {
     const hazardStage = stage.append('g').selectAll('rect').remove().data(hazardData);
     const rectWidth = scrollWidth / this.dataset.hazard.length;
     const rectHalfWidth = rectWidth / 2;
+
+    const setPosition = () => {
+      const tooltipComponent = this.$refs.tooltip as any;
+      const tooltipWidth = tooltipComponent.$el.getBoundingClientRect().width;
+      const tooltipHeight = tooltipComponent.$el.getBoundingClientRect().height;
+      this.setTooltipPosition(
+        d3.event.pageX - tooltipWidth / 2,
+        d3.event.pageY - tooltipHeight - 20,
+        this.dataset.hazardDescription);
+    };
+
     hazardStage
       .enter()
       .append('rect')
@@ -254,7 +269,16 @@ export default class LineGraph extends Vue {
       .attr('width', rectWidth)
       .attr('height', (d) => Boolean(d) ? height : 0)
       .attr('fill', this.filterColor)
-      .style('opacity', 0.2);
+      .style('opacity', 0.2)
+      .on('mouseover', () => {
+        this.isFocuse = true;
+        setPosition();
+      })
+      .on('mousemove', setPosition)
+      .on('mouseout', () => {
+        this.isFocuse = false;
+        setPosition();
+      });
   }
 }
 </script>

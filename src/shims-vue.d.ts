@@ -8,6 +8,6 @@ declare type Hazard = boolean;
 declare type DataStructure = {
   steps: Step[];
   hazard: Hazard[];
-  hazardDescriptionn: string;
+  hazardDescription: string;
   startDate: Date;
 };

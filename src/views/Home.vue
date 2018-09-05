@@ -28,7 +28,7 @@ const hazard: Hazard[] = steps.map((d) => d.y > 0.3);
 const dataset: DataStructure = {
   steps,
   hazard,
-  hazardDescriptionn: '転職しそうな時期です',
+  hazardDescription: '転職しそうな時期です',
   startDate: new Date(2017, 1, 1),
 };
 

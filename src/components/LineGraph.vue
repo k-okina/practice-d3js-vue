@@ -1,18 +1,20 @@
 <template>
-  <div>
+  <div :style="{width: width, height: height, position: 'relative'}">
     <svg ref="targetSvg">
       <g ref="mainStage" :transform="`translate(${x}, ${y})`"></g>
     </svg>
-    <div
-      @mousedown="keepMoveLeft"
-      @mouseup="clearKeepDown"
-      @mouseout="clearKeepDown"
-    >left</div>
-    <div
-      @mousedown="keepMoveRight"
-      @mouseup="clearKeepDown"
-      @mouseout="clearKeepDown"
-    >right</div>
+    <div class="controller" :style="{width: `${width}px`, height: `${height - axisBottomHeight}px`}">
+      <div
+        @mousedown="keepMoveLeft"
+        @mouseup="clearKeepDown"
+        @mouseout="clearKeepDown"
+      >left</div>
+      <div
+        @mousedown="keepMoveRight"
+        @mouseup="clearKeepDown"
+        @mouseout="clearKeepDown"
+      >right</div>
+    </div>
   </div>
 </template>
 
@@ -60,6 +62,7 @@ export default class LineGraph extends Vue {
   private keepDown: NodeJS.Timer|null = null;
   private margin = margin;
   private period = 12; // 期間は12年
+  private axisBottomHeight = 50; // axis bottomにはtextが書いてあり、その高さを考慮しないとtextが描画領域内に収まらない
 
   public mounted() {
     const steps: Step[] = d3.range(120).map((d, i) => ({
@@ -92,37 +95,11 @@ export default class LineGraph extends Vue {
 
   private renderGraph(elm: Element, dataset: DataStructure) {
     const scrollWidth = this.width * this.period;
-    const axisBottomHeight = 50; // axis bottomにはtextが書いてあり、その高さを考慮しないとtextが描画領域内に収まらない
-    const height = this.height - this.margin.top - this.margin.bottom - axisBottomHeight;
+    const height = this.height - this.margin.top - this.margin.bottom - this.axisBottomHeight;
 
     const svg = d3.select(elm)
       .attr('width', this.width)
       .attr('height', this.height);
-
-    // スクロールの設定
-    svg.attr('cursor', 'move');
-    const zoom = d3.zoom().on('zoom', () => {
-      const leftLimit = this.margin.left; // 左側の限界値
-      const rightLimit = scrollWidth - this.width - this.margin.left; // 右側の限界値 幅が600でスクロールなしならこの値は0になるべき
-      const t = d3.event.transform; // マウスの移動量を取得
-      let tx = null;
-
-      // 移動範囲を制限
-      if (t.x <= -rightLimit) { // 右端に達したなら停止
-        t.x = tx = -rightLimit;
-      } else if (t.x >= leftLimit) { // 左端に達したなら停止
-        t.x = tx = this.margin.left;
-      } else { // スクロール範囲内なら移動
-        tx = t.x;
-      }
-
-      // マウスに移動量に合わせてステージを移動
-      this.x = tx;
-      this.y = this.margin.top;
-    });
-
-    // ズームイベントリスナーをsvgに設置
-    svg.call(zoom);
 
     // xscaleはlength - 1。0からカウント
     const xScale = d3
@@ -237,5 +214,13 @@ export default class LineGraph extends Vue {
 
 .x.axis.sub path {
   display: none;
+}
+
+.controller {
+  position: absolute;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  top: 0;
 }
 </style>

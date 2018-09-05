@@ -60,6 +60,36 @@ export default class LineGraph extends Vue {
     const axisBottomHeight = 30; // axis bottomにはtextが書いてあり、その高さを考慮しないとtextが描画領域内に収まらない
     const height = this.height - margin.top - margin.bottom - axisBottomHeight;
 
+    const svg = d3.select(elm)
+      .attr('width', this.width)
+      .attr('height', this.height)
+      .attr('style', 'background: lightgoldenrodyellow');
+
+    // スクロールの設定
+    svg.attr('cursor', 'move');
+    const zoom = d3.zoom().on('zoom', () => {
+      const leftLimit = margin.left; // 左側の限界値
+      const rightLimit = scrollWidth - screenWidth - margin.left; // 右側の限界値 幅が600でスクロールなしならこの値は0になるべき
+      const t = d3.event.transform; // マウスの移動量を取得
+      let tx = null;
+
+      // 移動範囲を制限
+      if (t.x <= -rightLimit) { // 右端に達したなら停止
+        t.x = tx = -rightLimit;
+      } else if (t.x >= leftLimit) { // 左端に達したなら停止
+        t.x = tx = margin.left;
+      } else { // スクロール範囲内なら移動
+        tx = t.x;
+      }
+
+      // マウスに移動量に合わせてステージを移動
+      stage.attr('transform', `translate(${tx}, ${margin.top})`);
+    });
+
+    // ズームイベントリスナーをsvgに設置
+    svg.call(zoom);
+
+
     // xscaleはlength - 1。0からカウント
     const xScale = d3
       .scaleLinear()
@@ -69,10 +99,6 @@ export default class LineGraph extends Vue {
       .scaleLinear()
       .domain([0, 1])
       .range([0, height]);
-    const svg = d3.select(elm)
-      .attr('width', this.width)
-      .attr('height', this.height)
-      .attr('style', 'background: lightgoldenrodyellow');
 
     // 描画領域を作成
     const stage = svg.append('g')
@@ -115,30 +141,6 @@ export default class LineGraph extends Vue {
       .append('g')
       .attr('class', 'y axis')
       .call(yAxis as any);
-
-    // スクロールの設定
-    svg.attr('cursor', 'move');
-    const zoom = d3.zoom().on('zoom', () => {
-      const leftLimit = margin.left; // 左側の限界値
-      const rightLimit = scrollWidth - screenWidth - margin.left; // 右側の限界値 幅が600でスクロールなしならこの値は0になるべき
-      const t = d3.event.transform; // マウスの移動量を取得
-      let tx = null;
-
-      // 移動範囲を制限
-      if (t.x <= -rightLimit) { // 右端に達したなら停止
-        t.x = tx = -rightLimit;
-      } else if (t.x >= leftLimit) { // 左端に達したなら停止
-        t.x = tx = margin.left;
-      } else { // スクロール範囲内なら移動
-        tx = t.x;
-      }
-
-      // マウスに移動量に合わせてステージを移動
-      stage.attr('transform', `translate(${tx}, ${margin.top})`);
-    });
-
-    // ズームイベントリスナーをsvgに設置
-    svg.call(zoom);
   }
 }
 </script>

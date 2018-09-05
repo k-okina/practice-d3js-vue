@@ -53,15 +53,16 @@ export default class LineGraph extends Vue {
   }
 
   private renderGraph(elm: Element, dataset: DataStructure, startDate: Date) {
-    const margin = {top: 0, right: 10, bottom: 50, left: 10};
+    const margin = {top: 10, right: 30, bottom: 20, left: 30};
     const period = 12; // 期間は12年
     const screenWidth = this.width; // スクロールなしの1画面幅
     const scrollWidth = screenWidth * period;
-    const height = this.height - margin.top - margin.bottom;
+    const axisBottomHeight = 20;
+    const height = this.height - margin.top - margin.bottom - axisBottomHeight;
 
     // xscaleはlength - 1。0からカウント
     const xScale = d3.scaleLinear().domain([0, dataset.steps.length - 1]).range([0, scrollWidth - margin.left - margin.right]);
-    const yScale = d3.scaleLinear().domain([0, 1]).range([height, 0]);
+    const yScale = d3.scaleLinear().domain([0, 1]).range([0, height]);
     const svg = d3.select(elm)
       .attr('width', this.width)
       .attr('height', this.height)
@@ -75,7 +76,7 @@ export default class LineGraph extends Vue {
     const line = d3.line()
       .x((d, i) => xScale(i))
       .y((d: any) => yScale(d.y))
-      // .curve(d3.curveMonotoneX);
+      .curve(d3.curveMonotoneX);
 
     stage.append('path')
       .datum(dataset.steps)
@@ -83,25 +84,36 @@ export default class LineGraph extends Vue {
       .attr('class', 'line')
       .attr('d', line as any);
 
-    // 補助目盛線を作成
+    // x補助目盛線を作成
     const dates = generateDatesBySteps(dataset.steps, startDate);
-    const bottomXScale = d3.scaleBand()
+    const bottomXScale = d3
+      .scaleBand()
       .domain(dates)
       .range([0, scrollWidth - margin.left - margin.right]);
 
     const xAxis = d3
-      .axisBottom(bottomXScale)
-      // .axisBottom(xScale)
-      .tickSizeInner(-height)
-      .tickSizeInner(0)
+      .axisBottom(xScale)
+      .ticks(dates.length)
+      .tickFormat((d, i) => dates[i])
+      .tickSizeOuter(0)
       .tickPadding(10);
 
     stage
       .append('g')
       .attr('class', 'x axis')
       .attr('transform', `translate(0, ${height})`)
-      .attr('width', scrollWidth)
       .call(xAxis as any);
+
+    // y補助目盛線を作成
+    const yAxis = d3
+      .axisLeft(yScale)
+      .ticks(5)
+      .tickSizeInner(-scrollWidth);
+
+    stage
+      .append('g')
+      .attr('class', 'y axis')
+      .call(yAxis as any);
 
     // スクロールの設定
     svg.attr('cursor', 'move');
@@ -119,10 +131,9 @@ export default class LineGraph extends Vue {
       } else { // スクロール範囲内なら移動
         tx = t.x;
       }
-      console.log(tx);
 
       // マウスに移動量に合わせてステージを移動
-      stage.attr('transform', `translate(${tx}, 0)`);
+      stage.attr('transform', `translate(${tx}, ${margin.top})`);
     });
 
     //ズームイベントリスナーをsvgに設置
@@ -131,7 +142,7 @@ export default class LineGraph extends Vue {
 }
 </script>
 
-<style>
+<style lang="scss">
 .line {
   fill: none;
   stroke: #ffab00;
@@ -146,5 +157,12 @@ export default class LineGraph extends Vue {
 .axis line {
   fill: none;
   stroke: black;
+}
+
+.y.axis {
+  text,
+  path {
+    display: none;
+  }
 }
 </style>

@@ -255,8 +255,8 @@ export default class LineGraph extends Vue {
       const tooltipWidth = tooltipComponent.$el.getBoundingClientRect().width;
       const tooltipHeight = tooltipComponent.$el.getBoundingClientRect().height;
       this.setTooltipPosition(
-        d3.event.pageX - tooltipWidth / 2,
-        d3.event.pageY - tooltipHeight - 20,
+        d3.event.offsetX - tooltipWidth / 2,
+        d3.event.offsetY - tooltipHeight - 20,
         this.dataset.hazardDescription);
     };
 
@@ -277,7 +277,6 @@ export default class LineGraph extends Vue {
       .on('mousemove', setPosition)
       .on('mouseout', () => {
         this.isFocuse = false;
-        setPosition();
       });
   }
 }

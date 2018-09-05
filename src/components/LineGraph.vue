@@ -8,15 +8,10 @@ import { Component, Prop, Vue } from 'vue-property-decorator';
 import { setTimeout } from 'timers';
 import { copyFile } from 'fs';
 
-function format(date: Date): string {
-  const format = 'YYYY年MM月'.replace(/YYYY/, String(date.getFullYear()));
-  return format.replace(/MM/, String(date.getMonth() + 1));
-}
-
 type GraphData = {
   x: number;
   y: number;
-}
+};
 
 type Hazard = boolean;
 
@@ -26,14 +21,19 @@ type DataStructure = {
   hazardDescriptionn: string;
 };
 
+const formatDate = (date: Date): string => {
+  const format = 'YYYY年MM月'.replace(/YYYY/, String(date.getFullYear()));
+  return format.replace(/MM/, String(date.getMonth() + 1));
+};
+
 const generateDatesBySteps = (steps: GraphData[], date: Date): string[] => {
-  return steps.map((d, i) => format(new Date(date.getFullYear(), date.getMonth() + i)));
+  return steps.map((d, i) => formatDate(new Date(date.getFullYear(), date.getMonth() + i)));
 };
 
 @Component
 export default class LineGraph extends Vue {
-  @Prop({default: 600}) width!: number;
-  @Prop({default: 240}) height!: number;
+  @Prop({default: 600}) public width!: number;
+  @Prop({default: 240}) public height!: number;
 
   public mounted() {
     const steps: GraphData[] = d3.range(120).map((d, i) => ({
@@ -61,8 +61,14 @@ export default class LineGraph extends Vue {
     const height = this.height - margin.top - margin.bottom - axisBottomHeight;
 
     // xscaleはlength - 1。0からカウント
-    const xScale = d3.scaleLinear().domain([0, dataset.steps.length - 1]).range([0, scrollWidth - margin.left - margin.right]);
-    const yScale = d3.scaleLinear().domain([0, 1]).range([0, height]);
+    const xScale = d3
+      .scaleLinear()
+      .domain([0, dataset.steps.length - 1])
+      .range([0, scrollWidth - margin.left - margin.right]);
+    const yScale = d3
+      .scaleLinear()
+      .domain([0, 1])
+      .range([0, height]);
     const svg = d3.select(elm)
       .attr('width', this.width)
       .attr('height', this.height)
@@ -119,8 +125,8 @@ export default class LineGraph extends Vue {
     svg.attr('cursor', 'move');
     const zoom = d3.zoom().on('zoom', () => {
       const leftLimit = margin.left; // 左側の限界値
-      let rightLimit = scrollWidth - screenWidth - margin.left; // 右側の限界値 幅が600でスクロールなしならこの値は0になるべき
-      const t = d3.event.transform; //マウスの移動量を取得
+      const rightLimit = scrollWidth - screenWidth - margin.left; // 右側の限界値 幅が600でスクロールなしならこの値は0になるべき
+      const t = d3.event.transform; // マウスの移動量を取得
       let tx = null;
 
       // 移動範囲を制限
@@ -136,9 +142,9 @@ export default class LineGraph extends Vue {
       stage.attr('transform', `translate(${tx}, ${margin.top})`);
     });
 
-    //ズームイベントリスナーをsvgに設置
+    // ズームイベントリスナーをsvgに設置
     svg.call(zoom);
-  };
+  }
 }
 </script>
 

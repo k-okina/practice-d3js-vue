@@ -9,12 +9,12 @@ import { setTimeout } from 'timers';
 
 @Component
 export default class AppCircle extends Vue {
-  @Prop({default: 600}) width!: number;
-  @Prop({default: 240}) height!: number;
+  @Prop({default: 600}) public width!: number;
+  @Prop({default: 240}) public height!: number;
 
-  mounted() {
+  public mounted() {
     const data = [40, 15, 20, 30];
-    const draw = (dataSet: Array<Number>) => {
+    const draw = (dataSet: number[]) => {
       const circles = d3.select('svg').selectAll('circle').data(dataSet);
       return circles
         .enter()
@@ -22,12 +22,12 @@ export default class AppCircle extends Vue {
         .merge(circles)
         .attr('cx', (d, i) => i * 50 + 50)
         .attr('cy', this.height / 2)
-        .attr('r', d => String(d))
+        .attr('r', (d) => String(d))
         .attr('fill', 'pink')
-        .attr('cursor', 'pointer')
-    }
+        .attr('cursor', 'pointer');
+    };
     draw(data);
     setTimeout(() => draw([20, 90]), 1000);
-  };
+  }
 }
 </script>

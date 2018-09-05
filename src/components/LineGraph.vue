@@ -21,14 +21,12 @@ type DataStructure = {
 
 const getYear = (date: Date): string => {
   const format = 'YYYY年'.replace(/YYYY/, String(date.getFullYear()));
-  return format.replace(/MM/, String(date.getMonth() + 1));
+  return format.replace(/MM/, String(date.getMonth()));
 };
-
 const getMonth = (date: Date): string => {
   const format = 'MM月'.replace(/YYYY/, String(date.getFullYear()));
-  return format.replace(/MM/, String(date.getMonth() + 1));
+  return format.replace(/MM/, String(date.getMonth()));
 };
-
 const generateDatesBySteps = (steps: Step[], date: Date): Date[] => {
   return steps.map((d, i) => new Date(date.getFullYear(), date.getMonth() + i));
 };
@@ -67,8 +65,7 @@ export default class LineGraph extends Vue {
 
     const svg = d3.select(elm)
       .attr('width', this.width)
-      .attr('height', this.height)
-      .style('background', 'antiquewhite');
+      .attr('height', this.height);
 
     // スクロールの設定
     svg.attr('cursor', 'move');
@@ -191,7 +188,7 @@ export default class LineGraph extends Vue {
 <style lang="scss">
 .line {
   fill: none;
-  stroke-width: 3;
+  stroke-width: 5px;
 }
 
 .axis path,

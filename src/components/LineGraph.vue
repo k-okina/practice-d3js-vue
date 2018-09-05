@@ -86,16 +86,11 @@ export default class LineGraph extends Vue {
 
     stage.append('path')
       .datum(dataset.steps)
-      .attr('width', scrollWidth)
       .attr('class', 'line')
       .attr('d', line as any);
 
     // x補助目盛線を作成
     const dates = generateDatesBySteps(dataset.steps, dataset.startDate);
-    const bottomXScale = d3
-      .scaleBand()
-      .domain(dates)
-      .range([0, scrollWidth - margin.left - margin.right]);
 
     const xAxis = d3
       .axisBottom(xScale)

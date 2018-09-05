@@ -18,6 +18,7 @@ type DataStructure = {
   steps: Step[];
   hazard: Hazard[];
   hazardDescriptionn: string;
+  startDate: Date;
 };
 
 const formatDate = (date: Date): string => {
@@ -45,17 +46,18 @@ export default class LineGraph extends Vue {
       steps,
       hazard,
       hazardDescriptionn: '転職しそうな時期です',
+      startDate: new Date(2017, 1, 1),
     };
 
-    this.renderGraph(this.$refs.targetSvg as Element, dataset, new Date(2017, 1, 1));
+    this.renderGraph(this.$refs.targetSvg as Element, dataset);
   }
 
-  private renderGraph(elm: Element, dataset: DataStructure, startDate: Date) {
-    const margin = {top: 10, right: 30, bottom: 20, left: 30};
+  private renderGraph(elm: Element, dataset: DataStructure) {
+    const margin = {top: 0, right: 30, bottom: 0, left: 30};
     const period = 12; // 期間は12年
     const screenWidth = this.width; // スクロールなしの1画面幅
     const scrollWidth = screenWidth * period;
-    const axisBottomHeight = 20;
+    const axisBottomHeight = 30; // axis bottomにはtextが書いてあり、その高さを考慮しないとtextが描画領域内に収まらない
     const height = this.height - margin.top - margin.bottom - axisBottomHeight;
 
     // xscaleはlength - 1。0からカウント
@@ -89,7 +91,7 @@ export default class LineGraph extends Vue {
       .attr('d', line as any);
 
     // x補助目盛線を作成
-    const dates = generateDatesBySteps(dataset.steps, startDate);
+    const dates = generateDatesBySteps(dataset.steps, dataset.startDate);
     const bottomXScale = d3
       .scaleBand()
       .domain(dates)

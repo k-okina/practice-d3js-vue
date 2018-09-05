@@ -1,12 +1,25 @@
 <template>
-  <svg ref="targetSvg">
-    <g></g>
-  </svg>
+  <div>
+    <svg ref="targetSvg">
+      <g ref="mainStage" :transform="`translate(${x}, ${y})`"></g>
+    </svg>
+    <div
+      @mousedown="keepMoveLeft"
+      @mouseup="clearKeepDown"
+      @mouseout="clearKeepDown"
+    >left</div>
+    <div
+      @mousedown="keepMoveRight"
+      @mouseup="clearKeepDown"
+      @mouseout="clearKeepDown"
+    >right</div>
+  </div>
 </template>
 
 <script lang="ts">
 import * as d3 from 'd3';
 import { Component, Prop, Vue } from 'vue-property-decorator';
+import { setInterval, clearInterval } from 'timers';
 
 type Step = {
   y: number;
@@ -33,12 +46,20 @@ const generateDatesBySteps = (steps: Step[], date: Date): Date[] => {
   return steps.map((d, i) => new Date(date.getFullYear(), date.getMonth() + i));
 };
 
+const margin = {top: 0, right: 30, bottom: 0, left: 30};
+
 @Component
 export default class LineGraph extends Vue {
-  @Prop({default: 600}) public width!: number;
+  @Prop({default: 600}) public width!: number; // スクロールなしの1画面幅
   @Prop({default: 240}) public height!: number;
   @Prop({default: '#229439'}) public lineColor!: string;
   @Prop({default: '#2ab345'}) public filterColor!: string;
+  private x = margin.left;
+  private y = margin.top;
+  private vx = 1;
+  private keepDown: NodeJS.Timer|null = null;
+  private margin = margin;
+  private period = 12; // 期間は12年
 
   public mounted() {
     const steps: Step[] = d3.range(120).map((d, i) => ({
@@ -57,13 +78,22 @@ export default class LineGraph extends Vue {
     this.renderGraph(this.$refs.targetSvg as Element, dataset);
   }
 
+  private keepMoveRight() {
+    this.keepDown = setInterval(() => this.x -= this.vx, 1);
+  }
+
+  private keepMoveLeft() {
+    this.keepDown = setInterval(() => this.x += this.vx, 1);
+  }
+
+  private clearKeepDown() {
+    clearInterval(this.keepDown as NodeJS.Timer);
+  }
+
   private renderGraph(elm: Element, dataset: DataStructure) {
-    const margin = {top: 0, right: 30, bottom: 0, left: 30};
-    const period = 12; // 期間は12年
-    const screenWidth = this.width; // スクロールなしの1画面幅
-    const scrollWidth = screenWidth * period;
+    const scrollWidth = this.width * this.period;
     const axisBottomHeight = 50; // axis bottomにはtextが書いてあり、その高さを考慮しないとtextが描画領域内に収まらない
-    const height = this.height - margin.top - margin.bottom - axisBottomHeight;
+    const height = this.height - this.margin.top - this.margin.bottom - axisBottomHeight;
 
     const svg = d3.select(elm)
       .attr('width', this.width)
@@ -72,8 +102,8 @@ export default class LineGraph extends Vue {
     // スクロールの設定
     svg.attr('cursor', 'move');
     const zoom = d3.zoom().on('zoom', () => {
-      const leftLimit = margin.left; // 左側の限界値
-      const rightLimit = scrollWidth - screenWidth - margin.left; // 右側の限界値 幅が600でスクロールなしならこの値は0になるべき
+      const leftLimit = this.margin.left; // 左側の限界値
+      const rightLimit = scrollWidth - this.width - this.margin.left; // 右側の限界値 幅が600でスクロールなしならこの値は0になるべき
       const t = d3.event.transform; // マウスの移動量を取得
       let tx = null;
 
@@ -81,32 +111,31 @@ export default class LineGraph extends Vue {
       if (t.x <= -rightLimit) { // 右端に達したなら停止
         t.x = tx = -rightLimit;
       } else if (t.x >= leftLimit) { // 左端に達したなら停止
-        t.x = tx = margin.left;
+        t.x = tx = this.margin.left;
       } else { // スクロール範囲内なら移動
         tx = t.x;
       }
 
       // マウスに移動量に合わせてステージを移動
-      stage.attr('transform', `translate(${tx}, ${margin.top})`);
+      this.x = tx;
+      this.y = this.margin.top;
     });
 
     // ズームイベントリスナーをsvgに設置
     svg.call(zoom);
 
-
     // xscaleはlength - 1。0からカウント
     const xScale = d3
       .scaleLinear()
       .domain([0, dataset.steps.length - 1])
-      .range([0, scrollWidth - margin.left - margin.right]);
+      .range([0, scrollWidth - this.margin.left - this.margin.right]);
     const yScale = d3
       .scaleLinear()
       .domain([0, 1])
       .range([height, 0]);
 
     // 描画領域を作成
-    const stage = svg.select('g')
-      .attr('transform', `translate(${margin.left}, ${margin.top})`);
+    const stage = svg.select('g');
 
     // 曲線グラフを作成
     const line = d3.line()
@@ -169,7 +198,7 @@ export default class LineGraph extends Vue {
     const hazardXScale = d3
       .scaleBand()
       .domain(hazardData)
-      .range([0, scrollWidth - margin.left - margin.right]);
+      .range([0, scrollWidth - this.margin.left - this.margin.right]);
     const hazardStage = stage.append('g').selectAll('rect').remove().data(hazardData);
     const rectWidth = scrollWidth / dataset.hazard.length;
     const rectHalfWidth = rectWidth / 2;
@@ -177,7 +206,7 @@ export default class LineGraph extends Vue {
       .enter()
       .append('rect')
       .merge(hazardStage)
-      .attr('y', margin.bottom)
+      .attr('y', this.margin.bottom)
       .attr('x', (d, i) => i * rectWidth - rectHalfWidth)
       .attr('width', rectWidth)
       .attr('height', (d) => Boolean(d) ? height : 0)

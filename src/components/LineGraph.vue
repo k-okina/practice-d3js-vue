@@ -193,9 +193,6 @@ export default class LineGraph extends Vue {
 
     // 描画領域を再作成
     const stage = svg.select('g');
-    stage.selectAll('g').remove();
-    stage.selectAll('path').remove();
-    svg.selectAll('rect').remove();
 
     // 曲線グラフを作成
     const line = d3.line()
@@ -203,6 +200,7 @@ export default class LineGraph extends Vue {
       .y((d: any) => yScale(d.y))
       .curve(d3.curveMonotoneX);
 
+    stage.selectAll('path.line').remove();
     stage.append('path')
       .datum(this.dataset.steps)
       .attr('class', 'line')
@@ -229,6 +227,7 @@ export default class LineGraph extends Vue {
       .tickSizeOuter(0)
       .tickPadding(5);
 
+    stage.selectAll('g.x.axis').remove();
     stage
       .append('g')
       .attr('class', 'x axis')
@@ -247,7 +246,8 @@ export default class LineGraph extends Vue {
       .ticks(this.yAxisNumber)
       .tickSizeInner(-scrollWidth);
 
-    stage
+    svg.selectAll('g.y.axis').remove();
+    svg
       .append('g')
       .attr('class', 'y axis')
       .call(yAxis as any);
@@ -273,9 +273,11 @@ export default class LineGraph extends Vue {
         this.dataset.hazardDescription);
     };
 
+    svg.selectAll('rect.hazard.rect').remove();
     hazardStage
       .enter()
       .append('rect')
+      .attr('class', 'hazard rect')
       .merge(hazardStage)
       .attr('y', this.margin.bottom)
       .attr('x', (d, i) => i * rectWidth - rectHalfWidth)

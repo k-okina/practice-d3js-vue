@@ -1,16 +1,6 @@
 <template>
   <div class="home">
-    <Tooltip>
-      hoghoge<br>
-      fugafuga
-    </Tooltip>
-    <LineGraph :dataset="dataset" :width="width" :height="height"/>
-    <LineGraph :dataset="dataset" :defaultX="-500" :width="300" :height="200">
-      <button slot="left">leftボタン</button>
-      <button slot="right">rightボタン</button>
-    </LineGraph>
-    <LineGraph :dataset="dataset" :period="1"/>
-    <!-- <AppCircle/> -->
+    <LineGraph :dataset="dataset"/>
   </div>
 </template>
 
@@ -53,3 +43,10 @@ export default class Home extends Vue {
   }
 }
 </script>
+
+<style lang="scss" scoped>
+.home {
+  width: 50vw;
+  height: 50vh;
+}
+</style>

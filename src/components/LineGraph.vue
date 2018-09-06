@@ -1,5 +1,5 @@
 <template>
-  <div class="root-elm" :style="{width: `${width}px`, height: `${height}px`}">
+  <div class="root-elm">
     <svg ref="targetSvg" :width="width" :height="height">
       <g :transform="`translate(${x}, ${y})`"></g>
     </svg>
@@ -95,8 +95,6 @@ export default class LineGraph extends Vue {
   get canMoveLeft() {
     return this.x < this.leftLimit;
   }
-  @Prop({default: 600}) private width!: number; // スクロールなしの1画面幅
-  @Prop({default: 240}) private height!: number;
   @Prop({default: '#229439'}) private lineColor!: string;
   @Prop({default: '#2ab345'}) private filterColor!: string;
   @Prop() private dataset!: DataStructure;
@@ -107,6 +105,8 @@ export default class LineGraph extends Vue {
   @Prop() private defaultX?: number;
   @Prop() private defaultY?: number;
 
+  private width = 0; // スクロールなしの1画面幅
+  private height = 0;
   private x = this.defaultX || this.margin.left;
   private y = this.defaultY || this.margin.top;
   private keepDown: NodeJS.Timer|null = null;
@@ -124,7 +124,13 @@ export default class LineGraph extends Vue {
   }
 
   public mounted() {
-    this.renderGraph();
+    const render = () => {
+      this.width = this.$el.getBoundingClientRect().width;
+      this.height = this.$el.getBoundingClientRect().height;
+      this.renderGraph();
+    };
+    window.addEventListener('resize', render);
+    render();
   }
 
   public destroyed() {
@@ -321,6 +327,7 @@ export default class LineGraph extends Vue {
 }
 
 .root-elm {
+  height: 100%;
   position: relative;
 }
 

@@ -1,7 +1,7 @@
 <template>
   <div class="root-elm" :style="{width: `${width}px`, height: `${height}px`}">
-    <svg ref="targetSvg">
-      <g ref="mainStage" :transform="`translate(${x}, ${y})`"></g>
+    <svg ref="targetSvg" :width="width" :height="height">
+      <g :transform="`translate(${x}, ${y})`"></g>
     </svg>
 
     <transition>
@@ -38,7 +38,7 @@
 
 <script lang="ts">
 import * as d3 from 'd3';
-import { Component, Prop, Vue } from 'vue-property-decorator';
+import { Component, Prop, Vue, Watch } from 'vue-property-decorator';
 import { setInterval, clearInterval } from 'timers';
 import Tooltip from '@/components/Tooltip.vue';
 
@@ -117,6 +117,12 @@ export default class LineGraph extends Vue {
   private tooltipY = 0;
   private tooltipDescription = '';
 
+  @Watch('height')
+  @Watch('width')
+  public changeWidth() {
+    this.renderGraph();
+  }
+
   public mounted() {
     this.renderGraph();
   }
@@ -167,9 +173,7 @@ export default class LineGraph extends Vue {
     const scrollWidth = this.width * this.period;
     const height = this.height - this.margin.top - this.margin.bottom - this.axisBottomHeight;
 
-    const svg = d3.select(this.$refs.targetSvg as Element)
-      .attr('width', this.width)
-      .attr('height', this.height);
+    const svg = d3.select(this.$refs.targetSvg as Element);
 
     // xscaleはlength - 1。0からカウント
     const xScale = d3
@@ -181,8 +185,11 @@ export default class LineGraph extends Vue {
       .domain([0, 1])
       .range([height, 0]);
 
-    // 描画領域を作成
+    // 描画領域を再作成
     const stage = svg.select('g');
+    stage.selectAll('g').remove();
+    stage.selectAll('path').remove();
+    svg.selectAll('rect').remove();
 
     // 曲線グラフを作成
     const line = d3.line()
@@ -234,7 +241,7 @@ export default class LineGraph extends Vue {
       .ticks(this.yAxisNumber)
       .tickSizeInner(-scrollWidth);
 
-    svg
+    stage
       .append('g')
       .attr('class', 'y axis')
       .call(yAxis as any);
